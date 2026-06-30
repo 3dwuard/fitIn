@@ -7,7 +7,7 @@ const HomePage = () => {
   const navigate = useNavigate();
 
   return (
-    <main style={{ marginTop: '0', padding: '0', width: '100%', maxWidth: '480px', margin: '0 auto' }}>
+    <main style={{ width: '100%', maxWidth: '480px', margin: '0 auto', paddingBottom: '100px' }}>
       
       {/* Hero section */}
       <div style={{ padding: '48px 24px 32px' }}>

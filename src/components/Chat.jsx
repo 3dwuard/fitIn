@@ -9,6 +9,7 @@ function Chat({ requestId, receiverId }) {
   const [newMessages, setNewMessages] = useState("");
   const [uploading, setUploading] = useState(false);
   const messagesEndRef = useRef(null);
+  const [ showVideoCall, setSHowVideoCall ] = useState(false);
 
   const fetchMessages = async () => {
     const { data, error } = await supabase
@@ -135,9 +136,17 @@ function Chat({ requestId, receiverId }) {
 
       <div style={{ display: 'flex', gap: '0.5rem', padding: '0.5rem', borderTop: '1px solid #E8ECEE', alignItems: 'center' }}>
         <label style={{ cursor: 'pointer', color: '#007A8A', fontSize: '20px', margin: '0', padding: '0 4px', background: 'none', border: 'none', width: 'auto', height: 'auto', display: 'flex', alignItems: 'center' }}>
-          📎
-          <input type="file" accept="image/*,video/*" onChange={sendFile} style={{ display: 'none' }} disabled={uploading} />
+        📎
+        <input type="file" accept="image/*,video/*" onChange={sendFile} style={{ display: 'none' }} disabled={uploading} />
         </label>
+
+        <button
+          onClick={() => setShowVideoCall(!showVideoCall)}
+          style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', width: 'auto', height: 'auto', padding: '0 4px', margin: '0', color: showVideoCall ? '#00E5FF' : '#007A8A' }}
+          >
+         📹
+        </button>
+        
         <input
           type="text"
           placeholder={uploading ? "Uploading..." : "Type a message..."}
@@ -151,7 +160,9 @@ function Chat({ requestId, receiverId }) {
           Send
         </button>
       </div>
+      {showVideoCall && (
       <VideoCall requestId={requestId} receiverId={receiverId} />
+      )}
     </div>
   );
 }

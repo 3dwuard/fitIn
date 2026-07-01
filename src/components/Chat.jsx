@@ -1,6 +1,7 @@
 import { useSession } from "../context/SessionContext";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "../utils/supabaseClient";
+import VideoCall from "./VideoCall.jsx";
 
 function Chat({ requestId, receiverId }) {
   const { session } = useSession();
@@ -150,6 +151,7 @@ function Chat({ requestId, receiverId }) {
           Send
         </button>
       </div>
+      <VideoCall requestId={requestId} receiverId={receiverId} />
     </div>
   );
 }

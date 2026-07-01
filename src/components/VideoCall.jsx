@@ -12,7 +12,6 @@ function VideoCall({ requestId, receiverId }) {
 
   const sendOffer = async (pc) => {
     const offer = await pc.createOffer();
-    console.log('offer created:', offer);
     await pc.setLocalDescription(offer);
 
     const { data: callData, error: callError } = await supabase
@@ -40,13 +39,13 @@ function VideoCall({ requestId, receiverId }) {
 
     channel.subscribe(async (status) => {
       if (status === 'SUBSCRIBED') {
-    channel.send({
-      type: 'broadcast',
-      event: 'offer',
-      payload: { offer: JSON.stringify(offer) }
+        channel.send({
+          type: 'broadcast',
+          event: 'offer',
+          payload: { offer: JSON.stringify(offer) }
+        });
+      }
     });
-  }
-});
 
     pc.onicecandidate = ({ candidate }) => {
       if (candidate) {
@@ -85,12 +84,6 @@ function VideoCall({ requestId, receiverId }) {
 
     const channel = supabase.channel(`call-${requestId}`);
 
-    channel.send({
-      type: 'broadcast',
-      event: 'answer',
-      payload: { answer: JSON.stringify(answer) }
-    });
-
     pc.onicecandidate = ({ candidate }) => {
       if (candidate) {
         channel.send({
@@ -101,7 +94,15 @@ function VideoCall({ requestId, receiverId }) {
       }
     };
 
-    channel.subscribe();
+    channel.subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        channel.send({
+          type: 'broadcast',
+          event: 'answer',
+          payload: { answer: JSON.stringify(answer) }
+        });
+      }
+    });
   };
 
   const startCall = async () => {
@@ -148,7 +149,7 @@ function VideoCall({ requestId, receiverId }) {
   };
 
   useEffect(() => {
-    const channel = supabase.channel(`call-incoming-${requestId}`);
+    const channel = supabase.channel(`call-${requestId}`);
 
     channel.on('broadcast', { event: 'offer' }, async ({ payload }) => {
       const offer = JSON.parse(payload.offer);

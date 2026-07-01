@@ -19,10 +19,31 @@ function VideoCall({ requestId, receiverId }) {
         .select('role')
         .eq('id', session.user.id)
         .single();
+      console.log('user role fetched:', data?.role);
       if (data) setUserRole(data.role);
     };
     fetchRole();
   }, []);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel(`call-incoming-${requestId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'calls',
+        filter: `request_id=eq.${requestId}`
+      }, (payload) => {
+        console.log('new call detected:', payload.new);
+        if (payload.new.offer && payload.new.caller_id !== session.user.id) {
+          setIncomingOffer(JSON.parse(payload.new.offer));
+          setCallStatus('incoming');
+        }
+      })
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+  }, [requestId]);
 
   const sendOffer = async (pc) => {
     const offer = await pc.createOffer();
@@ -34,12 +55,12 @@ function VideoCall({ requestId, receiverId }) {
         request_id: Number(requestId),
         status: 'calling',
         offer: JSON.stringify(offer),
+        caller_id: session.user.id,
       })
       .select();
     console.log('call insert data:', callData);
     console.log('call insert error:', callError);
 
-    const offerChannel = supabase.channel(`call-offer-${requestId}`);
     const answerChannel = supabase.channel(`call-answer-${requestId}`);
 
     answerChannel.on('broadcast', { event: 'answer' }, async ({ payload }) => {
@@ -63,19 +84,6 @@ function VideoCall({ requestId, receiverId }) {
     };
 
     answerChannel.subscribe();
-
-    offerChannel.subscribe(async (status) => {
-      if (status === 'SUBSCRIBED') {
-        offerChannel.send({
-          type: 'broadcast',
-          event: 'offer',
-          payload: {
-            offer: JSON.stringify(offer),
-            senderId: session.user.id
-          }
-        });
-      }
-    });
   };
 
   const receiveCall = async (offer) => {
@@ -172,22 +180,6 @@ function VideoCall({ requestId, receiverId }) {
       setMuted(!muted);
     }
   };
-
-  useEffect(() => {
-    const channel = supabase.channel(`call-offer-${requestId}`);
-
-    channel.on('broadcast', { event: 'offer' }, async ({ payload }) => {
-      if (payload.senderId === session.user.id) return;
-      setIncomingOffer(JSON.parse(payload.offer));
-      setCallStatus('incoming');
-    });
-
-    channel.subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [requestId]);
 
   return (
     <div style={{ marginTop: '1rem' }}>

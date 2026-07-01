@@ -13,7 +13,7 @@ function VideoCall({ requestId, receiverId }) {
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
 
-    await supabase
+    const { data: callData, error: callError } = await supabase
       .from('calls')
       .insert({
         request_id: requestId,

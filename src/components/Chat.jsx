@@ -9,7 +9,7 @@ function Chat({ requestId, receiverId }) {
   const [newMessages, setNewMessages] = useState("");
   const [uploading, setUploading] = useState(false);
   const messagesEndRef = useRef(null);
-  const [ showVideoCall, setSHowVideoCall ] = useState(false);
+  const [ showVideoCall, setShowVideoCall ] = useState(false);
 
   const fetchMessages = async () => {
     const { data, error } = await supabase

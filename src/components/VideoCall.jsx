@@ -38,13 +38,15 @@ function VideoCall({ requestId, receiverId }) {
       await pc.addIceCandidate(new RTCIceCandidate(JSON.parse(payload.candidate)));
     });
 
-    channel.subscribe();
-
+    channel.subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
     channel.send({
       type: 'broadcast',
       event: 'offer',
       payload: { offer: JSON.stringify(offer) }
     });
+  }
+});
 
     pc.onicecandidate = ({ candidate }) => {
       if (candidate) {

@@ -38,6 +38,16 @@ function VideoCall({ requestId, receiverId }) {
       await pc.addIceCandidate(new RTCIceCandidate(JSON.parse(payload.candidate)));
     });
 
+    pc.onicecandidate = ({ candidate }) => {
+      if (candidate) {
+        answerChannel.send({
+          type: 'broadcast',
+          event: 'ice-candidate',
+          payload: { candidate: JSON.stringify(candidate) }
+        });
+      }
+    };
+
     answerChannel.subscribe();
 
     offerChannel.subscribe(async (status) => {
@@ -49,16 +59,6 @@ function VideoCall({ requestId, receiverId }) {
         });
       }
     });
-
-    pc.onicecandidate = ({ candidate }) => {
-      if (candidate) {
-        answerChannel.send({
-          type: 'broadcast',
-          event: 'ice-candidate',
-          payload: { candidate: JSON.stringify(candidate) }
-        });
-      }
-    };
   };
 
   const receiveCall = async (offer) => {

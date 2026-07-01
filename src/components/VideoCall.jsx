@@ -8,6 +8,7 @@ function VideoCall({ requestId, receiverId }) {
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const peerConnectionRef = useRef(null);
+  const [ muted, setMuted ] = useState(false);
 
   const sendOffer = async (pc) => {
     const offer = await pc.createOffer();
@@ -115,7 +116,26 @@ function VideoCall({ requestId, receiverId }) {
     };
 
     await sendOffer(pc);
-  };
+    };
+    
+    const endCall = () => {
+    if (peerConnectionRef.current) {
+    peerConnectionRef.current.close();
+    }
+    if (localVideoRef.current?.srcObject) {
+    localVideoRef.current.srcObject.getTracks().forEach(track => track.stop());
+    }
+    setCallStatus('idle');
+    };
+
+    const toggleMute = () => {
+    if (localVideoRef.current?.srcObject) {
+    localVideoRef.current.srcObject.getAudioTracks().forEach(track => {
+      track.enabled = !track.enabled;
+    });
+    setMuted(!muted);
+    }
+    };
 
   useEffect(() => {
     const channel = supabase.channel(`call-incoming-${requestId}`);
@@ -149,6 +169,16 @@ function VideoCall({ requestId, receiverId }) {
       {callStatus === 'connected' && (
         <p style={{ textAlign: 'center', color: '#00E5FF', fontSize: '13px', fontWeight: '600' }}>● Live</p>
       )}
+      {(callStatus === 'connected' || callStatus === 'calling') && (
+    <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+    <button onClick={toggleMute} style={{ flex: 1, margin: '0', background: muted ? '#FF4444' : '#F7F9FA', color: muted ? 'white' : '#0A0A0A', border: '1px solid #E8ECEE', borderRadius: '8px', padding: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>
+      {muted ? '🔇 Unmute' : '🎙️ Mute'}
+    </button>
+    <button onClick={endCall} style={{ flex: 1, margin: '0', background: '#FF4444', color: 'white', border: 'none', borderRadius: '8px', padding: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>
+      📵 End Call
+    </button>
+    </div>
+    )}
     </div>
   );
 }

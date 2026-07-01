@@ -20,6 +20,8 @@ function VideoCall({ requestId, receiverId }) {
         status: 'calling',
         offer: JSON.stringify(offer),
       });
+      console.log('call insert data:', data);
+        console.log('call insert error:', error);
 
     const channel = supabase.channel(`call-${requestId}`);
 

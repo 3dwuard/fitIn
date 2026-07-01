@@ -16,12 +16,12 @@ function VideoCall({ requestId, receiverId }) {
     const { data: callData, error: callError } = await supabase
       .from('calls')
       .insert({
-        request_id: requestId,
+        request_id: Number(requestId),
         status: 'calling',
         offer: JSON.stringify(offer),
       });
-      console.log('call insert data:', data);
-        console.log('call insert error:', error);
+      console.log('call insert data:', callData);
+        console.log('call insert error:', callError);
 
     const channel = supabase.channel(`call-${requestId}`);
 

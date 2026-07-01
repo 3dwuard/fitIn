@@ -5,10 +5,24 @@ import { supabase } from "../utils/supabaseClient";
 function VideoCall({ requestId, receiverId }) {
   const { session } = useSession();
   const [callStatus, setCallStatus] = useState('idle');
+  const [userRole, setUserRole] = useState(null);
+  const [incomingOffer, setIncomingOffer] = useState(null);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const peerConnectionRef = useRef(null);
   const [muted, setMuted] = useState(false);
+
+  useEffect(() => {
+    const fetchRole = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+      if (data) setUserRole(data.role);
+    };
+    fetchRole();
+  }, []);
 
   const sendOffer = async (pc) => {
     const offer = await pc.createOffer();
@@ -55,7 +69,10 @@ function VideoCall({ requestId, receiverId }) {
         offerChannel.send({
           type: 'broadcast',
           event: 'offer',
-          payload: { offer: JSON.stringify(offer) }
+          payload: {
+            offer: JSON.stringify(offer),
+            senderId: session.user.id
+          }
         });
       }
     });
@@ -132,6 +149,11 @@ function VideoCall({ requestId, receiverId }) {
     await sendOffer(pc);
   };
 
+  const acceptCall = async () => {
+    setCallStatus('calling');
+    await receiveCall(incomingOffer);
+  };
+
   const endCall = () => {
     if (peerConnectionRef.current) {
       peerConnectionRef.current.close();
@@ -155,8 +177,9 @@ function VideoCall({ requestId, receiverId }) {
     const channel = supabase.channel(`call-offer-${requestId}`);
 
     channel.on('broadcast', { event: 'offer' }, async ({ payload }) => {
-      const offer = JSON.parse(payload.offer);
-      await receiveCall(offer);
+      if (payload.senderId === session.user.id) return;
+      setIncomingOffer(JSON.parse(payload.offer));
+      setCallStatus('incoming');
     });
 
     channel.subscribe();
@@ -172,17 +195,33 @@ function VideoCall({ requestId, receiverId }) {
         <video ref={localVideoRef} autoPlay muted style={{ width: '48%', borderRadius: '8px', background: '#000' }} />
         <video ref={remoteVideoRef} autoPlay style={{ width: '48%', borderRadius: '8px', background: '#000' }} />
       </div>
-      {callStatus === 'idle' && (
+
+      {callStatus === 'idle' && userRole === 'coach' && (
         <button onClick={startCall} style={{ width: '100%', margin: '0', background: '#00E5FF', color: '#003D47', border: 'none', borderRadius: '8px', padding: '10px', fontWeight: '600', cursor: 'pointer' }}>
           📹 Start Video Call
         </button>
       )}
+
+      {callStatus === 'incoming' && (
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <p style={{ color: '#6B6B6B', fontSize: '13px', flex: 1, margin: '0' }}>📹 Incoming call...</p>
+          <button onClick={acceptCall} style={{ background: '#00E5FF', color: '#003D47', border: 'none', borderRadius: '8px', padding: '8px 16px', cursor: 'pointer', width: 'auto', margin: '0', fontWeight: '600' }}>
+            Accept
+          </button>
+          <button onClick={() => setCallStatus('idle')} style={{ background: '#FF4444', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 16px', cursor: 'pointer', width: 'auto', margin: '0', fontWeight: '600' }}>
+            Decline
+          </button>
+        </div>
+      )}
+
       {callStatus === 'calling' && (
         <p style={{ textAlign: 'center', color: '#6B6B6B', fontSize: '13px' }}>Connecting...</p>
       )}
+
       {callStatus === 'connected' && (
         <p style={{ textAlign: 'center', color: '#00E5FF', fontSize: '13px', fontWeight: '600' }}>● Live</p>
       )}
+
       {(callStatus === 'connected' || callStatus === 'calling') && (
         <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
           <button onClick={toggleMute} style={{ flex: 1, margin: '0', background: muted ? '#FF4444' : '#F7F9FA', color: muted ? 'white' : '#0A0A0A', border: '1px solid #E8ECEE', borderRadius: '8px', padding: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>

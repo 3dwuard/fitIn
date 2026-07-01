@@ -12,6 +12,7 @@ function VideoCall({ requestId, receiverId }) {
 
   const sendOffer = async (pc) => {
     const offer = await pc.createOffer();
+    console.log('offer created:', offer);
     await pc.setLocalDescription(offer);
 
     const { data: callData, error: callError } = await supabase
@@ -20,7 +21,8 @@ function VideoCall({ requestId, receiverId }) {
         request_id: Number(requestId),
         status: 'calling',
         offer: JSON.stringify(offer),
-      });
+      })
+      .select();
     console.log('call insert data:', callData);
     console.log('call insert error:', callError);
 

@@ -25,21 +25,24 @@ function VideoCall({ requestId, receiverId }) {
     console.log('call insert data:', callData);
     console.log('call insert error:', callError);
 
-    const channel = supabase.channel(`call-${requestId}`);
+    const offerChannel = supabase.channel(`call-offer-${requestId}`);
+    const answerChannel = supabase.channel(`call-answer-${requestId}`);
 
-    channel.on('broadcast', { event: 'answer' }, async ({ payload }) => {
+    answerChannel.on('broadcast', { event: 'answer' }, async ({ payload }) => {
       const answer = JSON.parse(payload.answer);
       await pc.setRemoteDescription(answer);
       setCallStatus('connected');
     });
 
-    channel.on('broadcast', { event: 'ice-candidate' }, async ({ payload }) => {
+    answerChannel.on('broadcast', { event: 'ice-candidate' }, async ({ payload }) => {
       await pc.addIceCandidate(new RTCIceCandidate(JSON.parse(payload.candidate)));
     });
 
-    channel.subscribe(async (status) => {
+    answerChannel.subscribe();
+
+    offerChannel.subscribe(async (status) => {
       if (status === 'SUBSCRIBED') {
-        channel.send({
+        offerChannel.send({
           type: 'broadcast',
           event: 'offer',
           payload: { offer: JSON.stringify(offer) }
@@ -49,7 +52,7 @@ function VideoCall({ requestId, receiverId }) {
 
     pc.onicecandidate = ({ candidate }) => {
       if (candidate) {
-        channel.send({
+        answerChannel.send({
           type: 'broadcast',
           event: 'ice-candidate',
           payload: { candidate: JSON.stringify(candidate) }
@@ -82,11 +85,11 @@ function VideoCall({ requestId, receiverId }) {
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
 
-    const channel = supabase.channel(`call-${requestId}`);
+    const answerChannel = supabase.channel(`call-answer-${requestId}`);
 
     pc.onicecandidate = ({ candidate }) => {
       if (candidate) {
-        channel.send({
+        answerChannel.send({
           type: 'broadcast',
           event: 'ice-candidate',
           payload: { candidate: JSON.stringify(candidate) }
@@ -94,9 +97,9 @@ function VideoCall({ requestId, receiverId }) {
       }
     };
 
-    channel.subscribe(async (status) => {
+    answerChannel.subscribe(async (status) => {
       if (status === 'SUBSCRIBED') {
-        channel.send({
+        answerChannel.send({
           type: 'broadcast',
           event: 'answer',
           payload: { answer: JSON.stringify(answer) }
@@ -149,7 +152,7 @@ function VideoCall({ requestId, receiverId }) {
   };
 
   useEffect(() => {
-    const channel = supabase.channel(`call-${requestId}`);
+    const channel = supabase.channel(`call-offer-${requestId}`);
 
     channel.on('broadcast', { event: 'offer' }, async ({ payload }) => {
       const offer = JSON.parse(payload.offer);

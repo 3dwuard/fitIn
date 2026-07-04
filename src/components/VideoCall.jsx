@@ -27,7 +27,7 @@ function VideoCall({ requestId, receiverId }) {
 
   useEffect(() => {
     const channel = supabase
-      .channel(`call-incoming-${requestId}`)
+      .channel(`call-incoming-${requestId}-${session.user.id}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -40,7 +40,9 @@ function VideoCall({ requestId, receiverId }) {
           setCallStatus('incoming');
         }
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('incoming call channel status');
+      });
 
     return () => supabase.removeChannel(channel);
   }, [requestId]);

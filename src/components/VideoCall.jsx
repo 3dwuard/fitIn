@@ -41,7 +41,7 @@ function VideoCall({ requestId, receiverId }) {
         }
       })
       .subscribe((status) => {
-        console.log('incoming call channel status');
+        console.log('incoming call channel status', status);
       });
 
     return () => supabase.removeChannel(channel);

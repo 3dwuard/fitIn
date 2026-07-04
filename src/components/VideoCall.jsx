@@ -157,6 +157,32 @@ function VideoCall({ requestId, receiverId }) {
     await sendOffer(pc);
   };
 
+  const pendingCandidates = [];
+let remoteDescriptionSet = false;
+
+answerChannel.on('broadcast', { event: 'answer' }, async ({ payload }) => {
+  const answer = JSON.parse(payload.answer);
+  await pc.setRemoteDescription(answer);
+  remoteDescriptionSet = true;
+  
+  // process any candidates that arrived early
+  for (const candidate of pendingCandidates) {
+    await pc.addIceCandidate(new RTCIceCandidate(candidate));
+  }
+  pendingCandidates.length = 0;
+  
+  setCallStatus('connected');
+});
+
+answerChannel.on('broadcast', { event: 'ice-candidate' }, async ({ payload }) => {
+  const candidate = JSON.parse(payload.candidate);
+  if (remoteDescriptionSet) {
+    await pc.addIceCandidate(new RTCIceCandidate(candidate));
+  } else {
+    pendingCandidates.push(candidate); // save for later
+  }
+});
+
   const acceptCall = async () => {
     setCallStatus('calling');
     await receiveCall(incomingOffer);

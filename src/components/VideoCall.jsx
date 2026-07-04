@@ -63,14 +63,29 @@ function VideoCall({ requestId, receiverId }) {
 
     const answerChannel = supabase.channel(`call-answer-${requestId}`);
 
+    const pendingCandidates = [];
+    let remoteDescriptionSet = false;
+
     answerChannel.on('broadcast', { event: 'answer' }, async ({ payload }) => {
       const answer = JSON.parse(payload.answer);
       await pc.setRemoteDescription(answer);
+      remoteDescriptionSet = true;
+
+      for (const candidate of pendingCandidates) {
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      }
+      pendingCandidates.length = 0;
+
       setCallStatus('connected');
     });
 
     answerChannel.on('broadcast', { event: 'ice-candidate' }, async ({ payload }) => {
-      await pc.addIceCandidate(new RTCIceCandidate(JSON.parse(payload.candidate)));
+      const candidate = JSON.parse(payload.candidate);
+      if (remoteDescriptionSet) {
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      } else {
+        pendingCandidates.push(candidate);
+      }
     });
 
     pc.onicecandidate = ({ candidate }) => {
@@ -157,32 +172,6 @@ function VideoCall({ requestId, receiverId }) {
     await sendOffer(pc);
   };
 
-  const pendingCandidates = [];
-let remoteDescriptionSet = false;
-
-answerChannel.on('broadcast', { event: 'answer' }, async ({ payload }) => {
-  const answer = JSON.parse(payload.answer);
-  await pc.setRemoteDescription(answer);
-  remoteDescriptionSet = true;
-  
-  // process any candidates that arrived early
-  for (const candidate of pendingCandidates) {
-    await pc.addIceCandidate(new RTCIceCandidate(candidate));
-  }
-  pendingCandidates.length = 0;
-  
-  setCallStatus('connected');
-});
-
-answerChannel.on('broadcast', { event: 'ice-candidate' }, async ({ payload }) => {
-  const candidate = JSON.parse(payload.candidate);
-  if (remoteDescriptionSet) {
-    await pc.addIceCandidate(new RTCIceCandidate(candidate));
-  } else {
-    pendingCandidates.push(candidate); // save for later
-  }
-});
-
   const acceptCall = async () => {
     setCallStatus('calling');
     await receiveCall(incomingOffer);
@@ -191,10 +180,16 @@ answerChannel.on('broadcast', { event: 'ice-candidate' }, async ({ payload }) =>
   const endCall = () => {
     if (peerConnectionRef.current) {
       peerConnectionRef.current.close();
+      peerConnectionRef.current = null;
     }
     if (localVideoRef.current?.srcObject) {
       localVideoRef.current.srcObject.getTracks().forEach(track => track.stop());
+      localVideoRef.current.srcObject = null;
     }
+    if (remoteVideoRef.current?.srcObject) {
+      remoteVideoRef.current.srcObject = null;
+    }
+    supabase.removeAllChannels();
     setCallStatus('idle');
   };
 

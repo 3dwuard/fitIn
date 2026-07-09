@@ -7,7 +7,7 @@ function AthleteDashboard() {
   const { session } = useSession();
   const [coaches, setCoaches] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [acceptedCoach, setAcceptedCoach] = useState(null);
+  const [acceptedCoaches, setAcceptedCoaches] = useState([]);
 
   useEffect(() => {
     const fetchCoaches = async () => {
@@ -26,21 +26,19 @@ function AthleteDashboard() {
   }, []);
 
   useEffect(() => {
-    const fetchAcceptedCoach = async () => {
+    const fetchAcceptedCoaches = async () => {
       const { data, error } = await supabase
         .from('requests')
         .select('id, status, coach_id, profiles!requests_coach_id_fkey(name, email, bio, avatar_url)')
         .eq('athlete_id', session.user.id)
         .eq('status', 'accepted');
       if (error) {
-    console.log('error', error);
-    } else {
-    console.log('accepted coach data:', data);
-    console.log('my user id:', session.user.id);
-    setAcceptedCoach(data[0]);
-    }
+        console.log('error', error);
+      } else {
+        setAcceptedCoaches(data);
+      }
     };
-    fetchAcceptedCoach();
+    fetchAcceptedCoaches();
   }, []);
 
   const sendRequest = async (coachId) => {
@@ -65,7 +63,7 @@ function AthleteDashboard() {
   };
 
   if (loading) return (
-    <main style={{ margin: '0 auto', padding: '24px 24px 100px', width: '100%', maxWidth: '480px' }}>
+    <main style={{ margin: '0 auto', padding: '48px 24px', width: '100%', maxWidth: '480px' }}>
       <p style={{ color: '#6B6B6B', textAlign: 'center' }}>Loading...</p>
     </main>
   );
@@ -73,23 +71,29 @@ function AthleteDashboard() {
   return (
     <main style={{ margin: '0 auto', padding: '24px 24px 120px', width: '100%', maxWidth: '480px' }}>
 
-      {acceptedCoach && (
-        <div style={{ background: '#E0FFFE', border: '2px solid #00E5FF', borderRadius: '16px', padding: '16px', marginBottom: '24px' }}>
-          <p style={{ fontSize: '11px', fontWeight: '600', color: '#007A8A', textTransform: 'uppercase', letterSpacing: '0.8px', margin: '0 0 12px' }}>Your coach</p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-            {acceptedCoach.profiles.avatar_url ? (
-              <img src={acceptedCoach.profiles.avatar_url} alt={acceptedCoach.profiles.name} style={{ width: '52px', height: '52px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #00E5FF' }} />
-            ) : (
-              <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: '700', color: '#007A8A' }}>
-                {(acceptedCoach.profiles.name || acceptedCoach.profiles.email)[0].toUpperCase()}
+      {acceptedCoaches.length > 0 && (
+        <div style={{ marginBottom: '24px' }}>
+          <p style={{ fontSize: '11px', fontWeight: '600', color: '#007A8A', textTransform: 'uppercase', letterSpacing: '0.8px', margin: '0 0 12px' }}>
+            Your coaches
+          </p>
+          {acceptedCoaches.map((match) => (
+            <div key={match.id} style={{ background: '#E0FFFE', border: '2px solid #00E5FF', borderRadius: '16px', padding: '16px', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                {match.profiles.avatar_url ? (
+                  <img src={match.profiles.avatar_url} alt={match.profiles.name} style={{ width: '52px', height: '52px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #00E5FF' }} />
+                ) : (
+                  <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: '700', color: '#007A8A' }}>
+                    {(match.profiles.name || match.profiles.email)[0].toUpperCase()}
+                  </div>
+                )}
+                <div>
+                  <p style={{ fontSize: '15px', fontWeight: '600', color: '#0A0A0A', margin: '0 0 2px' }}>{match.profiles.name || match.profiles.email}</p>
+                  <p style={{ fontSize: '12px', color: '#6B6B6B', margin: '0' }}>{match.profiles.bio || 'No bio yet'}</p>
+                </div>
               </div>
-            )}
-            <div>
-              <p style={{ fontSize: '15px', fontWeight: '600', color: '#0A0A0A', margin: '0 0 2px' }}>{acceptedCoach.profiles.name || acceptedCoach.profiles.email}</p>
-              <p style={{ fontSize: '12px', color: '#6B6B6B', margin: '0' }}>{acceptedCoach.profiles.bio || 'No bio yet'}</p>
+              <Chat requestId={match.id} receiverId={match.coach_id} />
             </div>
-          </div>
-          <Chat requestId={acceptedCoach.id} receiverId={acceptedCoach.coach_id} />
+          ))}
         </div>
       )}
 

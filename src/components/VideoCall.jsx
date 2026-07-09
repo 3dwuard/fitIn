@@ -205,7 +205,7 @@ function VideoCall({ requestId, receiverId }) {
 
   return (
     <div style={{ marginTop: '1rem' }}>
-      <div style={{ display: callStatus === 'idle' ? 'none' : 'flex', gap: '8px', marginBottom: '8px' }}>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
         <video ref={localVideoRef} autoPlay muted style={{ width: '48%', borderRadius: '8px', background: '#000' }} />
         <video ref={remoteVideoRef} autoPlay style={{ width: '48%', borderRadius: '8px', background: '#000' }} />
       </div>

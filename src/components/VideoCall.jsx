@@ -191,7 +191,6 @@ function VideoCall({ requestId, receiverId }) {
     if (remoteVideoRef.current?.srcObject) {
       remoteVideoRef.current.srcObject = null;
     }
-    supabase.removeAllChannels();
     setCallStatus('idle');
   };
 

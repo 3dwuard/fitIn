@@ -33,18 +33,13 @@ function AthleteDashboard() {
         .eq('athlete_id', session.user.id)
         .eq('status', 'accepted');
       if (error) {
-        console.log('error', error);
-      } else {
-        setAcceptedCoach(data[0]);
-      }
+    console.log('error', error);
+    } else {
+    console.log('accepted coach data:', data);
+    console.log('my user id:', session.user.id);
+    setAcceptedCoach(data[0]);
+    }
     };
-    if (error) {
-  console.log('error', error);
-} else {
-  console.log('accepted coach data:', data);
-  console.log('my user id:', session.user.id);
-  setAcceptedCoach(data[0]);
-}
     fetchAcceptedCoach();
   }, []);
 

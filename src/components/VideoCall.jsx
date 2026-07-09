@@ -19,6 +19,7 @@ function VideoCall({ requestId, receiverId }) {
         .select('role')
         .eq('id', session.user.id)
         .single();
+      console.log('user role fetched:', data?.role);
       if (data) setUserRole(data.role);
     };
     fetchRole();
@@ -33,13 +34,14 @@ function VideoCall({ requestId, receiverId }) {
         table: 'calls',
         filter: `request_id=eq.${requestId}`
       }, (payload) => {
+        console.log('new call detected:', payload.new);
         if (payload.new.offer && payload.new.caller_id !== session.user.id) {
           setIncomingOffer(JSON.parse(payload.new.offer));
           setCallStatus('incoming');
         }
       })
       .subscribe((status) => {
-        console.log('incoming call channel status:', status);
+        console.log('incoming call channel status', status);
       });
 
     return () => supabase.removeChannel(channel);
@@ -49,7 +51,7 @@ function VideoCall({ requestId, receiverId }) {
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
 
-    const { error: callError } = await supabase
+    const { data: callData, error: callError } = await supabase
       .from('calls')
       .insert({
         request_id: Number(requestId),
@@ -58,7 +60,8 @@ function VideoCall({ requestId, receiverId }) {
         caller_id: session.user.id,
       })
       .select();
-    if (callError) console.log('call insert error:', callError);
+    console.log('call insert data:', callData);
+    console.log('call insert error:', callError);
 
     const answerChannel = supabase.channel(`call-answer-${requestId}`);
 
@@ -69,14 +72,16 @@ function VideoCall({ requestId, receiverId }) {
       const answer = JSON.parse(payload.answer);
       await pc.setRemoteDescription(answer);
       remoteDescriptionSet = true;
+
       for (const candidate of pendingCandidates) {
         await pc.addIceCandidate(new RTCIceCandidate(candidate));
       }
       pendingCandidates.length = 0;
+
       setCallStatus('connected');
     });
 
-    answerChannel.on('broadcast', { event: 'ice-athlete' }, async ({ payload }) => {
+    answerChannel.on('broadcast', { event: 'ice-candidate' }, async ({ payload }) => {
       const candidate = JSON.parse(payload.candidate);
       if (remoteDescriptionSet) {
         await pc.addIceCandidate(new RTCIceCandidate(candidate));
@@ -89,7 +94,7 @@ function VideoCall({ requestId, receiverId }) {
       if (candidate) {
         answerChannel.send({
           type: 'broadcast',
-          event: 'ice-coach',
+          event: 'ice-candidate',
           payload: { candidate: JSON.stringify(candidate) }
         });
       }
@@ -124,16 +129,11 @@ function VideoCall({ requestId, receiverId }) {
 
     const answerChannel = supabase.channel(`call-answer-${requestId}`);
 
-    answerChannel.on('broadcast', { event: 'ice-coach' }, async ({ payload }) => {
-      const candidate = JSON.parse(payload.candidate);
-      await pc.addIceCandidate(new RTCIceCandidate(candidate));
-    });
-
     pc.onicecandidate = ({ candidate }) => {
       if (candidate) {
         answerChannel.send({
           type: 'broadcast',
-          event: 'ice-athlete',
+          event: 'ice-candidate',
           payload: { candidate: JSON.stringify(candidate) }
         });
       }

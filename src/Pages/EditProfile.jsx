@@ -83,7 +83,7 @@ const handleSave = async () => {
   };
 
   return (
-    <main style={{ margin: '0 auto', padding: '48px 24px', width: '100%', maxWidth: '480px' }}>
+    <main style={{ margin: '0 auto', padding: '48px 24px 120px', width: '100%', maxWidth: '480px' }}>
       <div style={{ marginBottom: '32px' }}>
         <h1 style={{ fontSize: '28px', fontWeight: '700', letterSpacing: '-0.5px', color: '#0A0A0A', marginBottom: '8px' }}>Edit profile</h1>
         <p style={{ fontSize: '14px', color: '#6B6B6B' }}>Update your information</p>

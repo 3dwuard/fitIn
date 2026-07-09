@@ -12,6 +12,7 @@ import AthleteDashboard from "../Pages/AthleteDashboard.jsx";
 import CoachOnboarding from "../Pages/CoachOnboarding.jsx";
 import AthleteOnboarding from "../Pages/AthleteOnboarding.jsx";
 import EditProfile from "../Pages/EditProfile.jsx";
+import AboutPage from "../Pages/AboutPage.jsx";
 
 const router = createBrowserRouter([
   {
@@ -23,6 +24,10 @@ const router = createBrowserRouter([
         path: "/",
         element: <HomePage />,
       },
+      {
+            path: "/about",
+            element: <AboutPage />,
+          },
       {
         path: "/auth/sign-in",
         element: <SignInPage />,

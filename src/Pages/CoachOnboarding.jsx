@@ -61,7 +61,7 @@ function CoachOnboarding() {
   };
 
   return (
-    <main style={{ margin: '0 auto', padding: '48px 24px', width: '100%', maxWidth: '480px' }}>
+    <main style={{ margin: '0 auto', padding: '48px 24px 120px', width: '100%', maxWidth: '480px' }}>
 
       <div style={{ marginBottom: '32px' }}>
         <div style={{ display: 'inline-block', background: '#E0FFFE', color: '#007A8A', fontSize: '11px', fontWeight: '600', padding: '4px 12px', borderRadius: '20px', marginBottom: '16px', letterSpacing: '0.8px', textTransform: 'uppercase' }}>
